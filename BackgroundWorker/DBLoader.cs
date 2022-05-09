@@ -17,8 +17,8 @@ namespace ExcelToArticuloParserV2.BackgroundWorker
             {
                 progress.Report(i);
                 ArticleDTO article = list[i];
-                if(article.ArticleStatus!=ArticleDTO.ArticleStatusEnum.WAITING && 
-                   article.ArticleStatus!=ArticleDTO.ArticleStatusEnum.UPLOAD_ERROR ) continue;
+                if (article.ArticleStatus != ArticleDTO.ArticleStatusEnum.WAITING &&
+                    article.ArticleStatus != ArticleDTO.ArticleStatusEnum.UPLOAD_ERROR) continue;
                 UploadArticle(article, enlace);
                 articlesBinding.ResetItem(i);
                 Thread.Sleep(1000);
@@ -32,7 +32,8 @@ namespace ExcelToArticuloParserV2.BackgroundWorker
             {
                 article.CodArt = SearchAlternaByCodAlt(article.CodArt);
                 articleMaestro.Iniciar("Articulo");
-                if (articleMaestro.Buscar(article.CodArt))
+                bool isFound = articleMaestro.Buscar(article.CodArt);
+                if (isFound)
                 {
                     articleMaestro.Edita();
                     article.ArticleStatus = ArticleDTO.ArticleStatusEnum.UPDATED;
@@ -41,18 +42,23 @@ namespace ExcelToArticuloParserV2.BackgroundWorker
                 {
                     articleMaestro.Nuevo();
                     article.ArticleStatus = ArticleDTO.ArticleStatusEnum.CREATED;
-                    AddToAlterna(article.CodArt);
                 }
                 articleMaestro.AsString["CodArt"] = article.CodArt;
                 articleMaestro.AsString["DescArt"] = article.DescArt;
-                articleMaestro.AsString["PrcVenta"] = article.PrcVenta;
-                articleMaestro.AsString["PrcCompra"] = article.PrcCompra;
+                double prcCompra;
+                double prcVenta;
+                if (Double.TryParse(article.PrcCompra, out prcCompra))
+                    articleMaestro.AsFloat["PrcCompra"] = prcCompra;
+                if (Double.TryParse(article.PrcVenta, out prcVenta))
+                    articleMaestro.AsFloat["PrcVenta"] = prcVenta;
                 articleMaestro.AsString["TipIva"] = string.IsNullOrEmpty(article.TipIva) ? "ORD21" : article.TipIva;
                 articleMaestro.Guarda(true);
+                if (!isFound) AddToAlterna(article.CodArt);
             }
             catch (Exception e)
             {
                 article.ArticleStatus = ArticleDTO.ArticleStatusEnum.UPLOAD_ERROR;
+                articleMaestro.Cancelar();
             }
             finally
             {
