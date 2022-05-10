@@ -19,8 +19,13 @@ namespace ExcelToArticuloParserV2.BackgroundWorker
             using (SpreadsheetDocument ssd = SpreadsheetDocument.Open(filePath, false))
             {
                 _stringTable = ssd.WorkbookPart.SharedStringTablePart.SharedStringTable;
+                var sheetId = ssd.WorkbookPart.Workbook.Descendants<Sheet>().First().Id;
+                WorksheetPart wsp = ssd.WorkbookPart.GetPartById(sheetId) as WorksheetPart;
+                _rows = wsp.Worksheet.Elements<SheetData>().First().Elements<Row>().ToList();
+                /*
                 _rows = ssd.WorkbookPart.WorksheetParts.First()
                     .Worksheet.Elements<SheetData>().First().Elements<Row>().ToList();
+                    */
                 ValidateHeaders();
             }
         }
